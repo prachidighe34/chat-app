@@ -15,25 +15,33 @@ const registerLoad = async (req, res) => {
  }
 };
 
-const register = async (req, res) => {
+const register = async(req, res) => {
     try {
         const passwordHash = await bcrypt.hash(req.body.password, 10);
 
         const user = new User({
             name: req.body.name,
             email: req.body.email,
-            image: 'image/' + req.file.filename,
+            image: req.file.path,  // cloudinary returns full URL in req.file.path
             password: passwordHash
         });
 
         await user.save();
-        res.render('register', { message: 'Registration successful' });
 
-    } catch (error) {
-        console.log(error.message);  // add this
-        res.render('register', { message: 'Registration failed. Try again.' });
+        if(req.headers['x-requested-with'] === 'flutter') {
+            return res.json({success: true, message: 'Registration successful'});
+        }
+
+        res.render('register', {message: 'Registration successful'});
+
+    } catch(error) {
+        console.log(error.message);
+        if(req.headers['x-requested-with'] === 'flutter') {
+            return res.status(400).json({success: false, message: error.message});
+        }
+        res.render('register', {message: 'Registration failed. Try again.'});
     }
-};
+}
 
 const loadLogin = async(req, res) => {
     try{
@@ -50,32 +58,55 @@ const login = async(req, res) => {
     try {
         const userData = await User.findOne({email: req.body.email});
         if(!userData) {
-            return res.render('login', {message: "Email and Password Incorrect!"});
+            // check if request is from Flutter or browser
+            if(req.headers['content-type']?.includes('application/json') || 
+               req.headers['x-requested-with'] === 'flutter') {
+                return res.status(401).json({success: false, message: 'Invalid email or password'});
+            }
+            return res.render('login', {message: 'Email and Password Incorrect!'});
         }
 
         const passwordMatch = await bcrypt.compare(req.body.password, userData.password);
         if(!passwordMatch) {
-            return res.render('login', {message: "Email and Password Incorrect!"});
+            if(req.headers['x-requested-with'] === 'flutter') {
+                return res.status(401).json({success: false, message: 'Invalid email or password'});
+            }
+            return res.render('login', {message: 'Email and Password Incorrect!'});
         }
 
         const accessToken = jwt.sign(
-            { id: userData._id, name: userData.name },
+            {id: userData._id, name: userData.name},
             process.env.JWT_SECRET,
-            { expiresIn: '15m' }
+            {expiresIn: '15m'}
         );
 
         const refreshToken = jwt.sign(
-            { id: userData._id },
+            {id: userData._id},
             process.env.JWT_REFRESH_SECRET,
-            { expiresIn: '7d' }
+            {expiresIn: '7d'}
         );
 
-        // keep cookie for EJS frontend, add tokens for Flutter later
-        res.cookie('user', JSON.stringify(userData));
-        res.cookie('accessToken', accessToken, { httpOnly: true });
-        res.cookie('refreshToken', refreshToken, { httpOnly: true });
+        // Flutter request — return JSON
+        if(req.headers['x-requested-with'] === 'flutter') {
+            return res.json({
+                success: true,
+                accessToken,
+                refreshToken,
+                user: {
+                    _id: userData._id,
+                    name: userData.name,
+                    email: userData.email,
+                    image: userData.image,
+                    is_online: userData.is_online
+                }
+            });
+        }
 
+        // Browser request — session + redirect as before
         req.session.user = userData;
+        res.cookie('user', JSON.stringify(userData));
+        res.cookie('accessToken', accessToken, {httpOnly: true});
+        res.cookie('refreshToken', refreshToken, {httpOnly: true});
         res.redirect('/dashboard');
 
     } catch(error) {

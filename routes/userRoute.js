@@ -1,12 +1,15 @@
 
 const express = require('express');
-
 const userControllers = require('../controllers/userControllers.js');
 const user_route = express();
-
 const bodyParser = require('body-parser');
-
 const cookieParser = require('cookie-parser');
+const path = require('path');
+const storage = multer.memoryStorage();
+const { uploadToCloudinary } = require('../helpers/cloudinary');
+const auth = require('../middleware/auth.js');
+const multer = require('multer');
+
 user_route.use(cookieParser());
 
 user_route.use(bodyParser.json());
@@ -19,29 +22,10 @@ user_route.set('views', './view');
 
 user_route.use(express.static('./public'));
 
-const path = require('path');
-
-const cloudinary = require('cloudinary').v2;
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
-
-cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET,
-});
-
-const storage = new CloudinaryStorage({
-    cloudinary: cloudinary,
-    params: {
-        folder: 'chat-app',
-        allowed_formats: ['jpg', 'jpeg', 'png'],
-    },
-});
-
-const upload = multer({ storage: storage });
 
 
-const auth = require('../middleware/auth.js')
+const upload = multer({ storage: multer.memoryStorage() });
+
 
 user_route.get('/register', auth.isLogout,userControllers.registerLoad);
 user_route.post('/register', upload.single('image'), userControllers.register);

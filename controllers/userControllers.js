@@ -6,6 +6,7 @@ const Member = require('../models/memberModal');
 const GroupChat = require('../models/groupChatModel');
 const mongoose = require ("mongoose");
 const jwt = require('jsonwebtoken');
+const { uploadToCloudinary } = require('../helpers/cloudinary');
 const registerLoad = async (req, res) => {
  try{
         res.render('register');

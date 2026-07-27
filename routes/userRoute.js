@@ -51,6 +51,21 @@ user_route.post('/load-group-chats', userControllers.loadGroupChat);
 user_route.post('/delete-group-chat', userControllers.deleteGroupChat);
 user_route.post('/update-group-chat', userControllers.updateGroupChat);
 user_route.post('/refresh-token', userControllers.refreshToken);
+// add this route
+const User = require('../models/userModel.js');
+
+user_route.get('/api/users', auth.isLogin, async(req, res) => {
+    try {
+        const userId = req.session.user?._id || req.user?.id;
+        const users = await User.find({
+            _id: { $nin: [userId] }
+        }).select('name email image is_online');
+        
+        res.json({ success: true, users });
+    } catch(error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
 user_route.use(function(req, res){
     res.redirect('/');
 });

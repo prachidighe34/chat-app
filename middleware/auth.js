@@ -1,18 +1,16 @@
 const jwt = require('jsonwebtoken');
 
+// in middleware/auth.js - already done earlier but verify it's there
 const isLogin = async(req, res, next) => {
     try {
-        // check session first (EJS web app)
         if(req.session.user) return next();
 
-        // check JWT (Flutter app)
         const token = req.headers.authorization?.split(' ')[1];
         if(token) {
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
             req.user = decoded;
             return next();
         }
-
         res.redirect('/');
     } catch(error) {
         res.redirect('/');

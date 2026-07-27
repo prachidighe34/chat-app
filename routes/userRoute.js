@@ -17,7 +17,7 @@ user_route.set('view engine', 'ejs');
 user_route.set('views', path.join(__dirname, '../view'));
 user_route.use(express.static(path.join(__dirname, '../public')));
 
-/
+
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 

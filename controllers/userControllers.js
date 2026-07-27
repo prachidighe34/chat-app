@@ -110,9 +110,14 @@ const login = async(req, res) => {
         res.cookie('refreshToken', refreshToken, {httpOnly: true});
         res.redirect('/dashboard');
 
-    } catch(error) {
-        console.log(error.message);
+    }  catch(error) {
+    console.log('LOGIN ERROR:', error.message);
+    console.log('FULL ERROR:', error);
+    if(req.headers['x-requested-with'] === 'flutter') {
+        return res.status(500).json({success: false, message: error.message});
     }
+    res.render('login', {message: 'Server error'});
+}
 }
 const refreshToken = async(req, res) => {
     try {

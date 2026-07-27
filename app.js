@@ -2,9 +2,12 @@ require('dotenv').config();
 
 let mongoose = require('mongoose');
 
-mongoose.connect(process.env.MONGO_URI)
-    .then(() => console.log('MongoDB connected'))
-    .catch((err) => console.log('MongoDB connection error:', err));
+mongoose.connect(process.env.MONGO_URI, {
+    serverSelectionTimeoutMS: 30000, // increase from default 10s to 30s
+    socketTimeoutMS: 45000,
+})
+.then(() => console.log('MongoDB connected'))
+.catch((err) => console.log('MongoDB connection error:', err));
     
 const app = require('express')();
 const jwt = require('jsonwebtoken'); // add this

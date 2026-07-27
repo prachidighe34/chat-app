@@ -1,30 +1,27 @@
 
 const express = require('express');
-const userControllers = require('../controllers/userControllers.js');
-const user_route = express();
+const path = require('path');
+const multer = require('multer');  // import first
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
-const path = require('path');
-const storage = multer.memoryStorage();
-const { uploadToCloudinary } = require('../helpers/cloudinary');
+const session = require('express-session');
 const auth = require('../middleware/auth.js');
-const multer = require('multer');
+const userControllers = require('../controllers/userControllers.js');
+
+const user_route = express();
 
 user_route.use(cookieParser());
-
 user_route.use(bodyParser.json());
-
 user_route.use(bodyParser.urlencoded({extended: true}));
-
 user_route.set('view engine', 'ejs');
+user_route.set('views', path.join(__dirname, '../view'));
+user_route.use(express.static(path.join(__dirname, '../public')));
 
-user_route.set('views', './view');
+/
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
 
-user_route.use(express.static('./public'));
 
-
-
-const upload = multer({ storage: multer.memoryStorage() });
 
 
 user_route.get('/register', auth.isLogout,userControllers.registerLoad);

@@ -20,10 +20,17 @@ const register = async(req, res) => {
     try {
         const passwordHash = await bcrypt.hash(req.body.password, 10);
 
+        // handle missing image
+        let imageUrl = '';
+        if(req.file) {
+            const result = await uploadToCloudinary(req.file.buffer);
+            imageUrl = result.secure_url;
+        }
+
         const user = new User({
             name: req.body.name,
             email: req.body.email,
-            image: req.file.path,  // cloudinary returns full URL in req.file.path
+            image: imageUrl,  // empty string if no image
             password: passwordHash
         });
 

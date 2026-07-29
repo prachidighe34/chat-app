@@ -36,7 +36,25 @@ user_route.post('/save-chat', userControllers.saveChat);
 user_route.post('/delete-chat', userControllers.deleteChat);
 user_route.post('/update-chat', userControllers.updateChat);
 
-user_route.get('/groups', auth.isLogin, userControllers.loadGroups);
+user_route.get('/groups', auth.isLogin, async(req, res) => {
+    try {
+        const userId = req.session.user?._id || req.user?.id;
+        
+        if(req.headers['x-requested-with'] === 'flutter') {
+            const groups = await Group.find({creator_id: userId});
+            return res.json({success: true, groups});
+        }
+        
+        // browser request - render EJS as before
+        const groups = await Group.find({creator_id: userId});
+        res.render('group', {user: req.session.user, groups, message: undefined});
+    } catch(error) {
+        console.log(error.message);
+        if(req.headers['x-requested-with'] === 'flutter') {
+            return res.status(500).json({success: false, message: error.message});
+        }
+    }
+});
 user_route.post('/groups', upload.single('image'), userControllers.createGroup);
 
 user_route.post('/get-members', auth.isLogin, userControllers.getMembers);

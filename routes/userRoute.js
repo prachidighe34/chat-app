@@ -7,7 +7,8 @@ const cookieParser = require('cookie-parser');
 const session = require('express-session');
 const auth = require('../middleware/auth.js');
 const userControllers = require('../controllers/userControllers.js');
-
+const Group = require('../models/groupModel.js');
+const Member = require('../models/memberModal.js');
 const user_route = express();
 
 user_route.use(cookieParser());

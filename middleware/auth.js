@@ -52,5 +52,25 @@ const isLogout = async(req, res, next) => {
         next();
     }
 }
-
+if(token) {
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        console.log('JWT decoded successfully:', decoded);
+        req.user = decoded;
+        return next();
+    } catch(jwtError) {
+        console.log('JWT Error name:', jwtError.name);
+        console.log('JWT Error message:', jwtError.message);
+        console.log('Token that failed:', token.substring(0, 30));
+        console.log('Secret length:', process.env.JWT_SECRET?.length);
+        
+        if(req.headers['x-requested-with'] === 'flutter') {
+            return res.status(401).json({
+                success: false,
+                message: 'JWT Error: ' + jwtError.name + ' - ' + jwtError.message
+            });
+        }
+        return res.redirect('/');
+    }
+}
 module.exports = { isLogin, isLogout };

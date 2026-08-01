@@ -57,19 +57,19 @@ user_route.get('/groups', auth.isLogin, async(req, res) => {
         }
     }
 });
-user_route.post('/groups', upload.single('image'), userControllers.createGroup);
+user_route.post('/groups', auth.isLogin, upload.single('image'), userControllers.createGroup);
 
 user_route.post('/get-members', auth.isLogin, userControllers.getMembers);
 user_route.post('/add-members', auth.isLogin, userControllers.addMembers);
-user_route.post('/update-chat-group', upload.single('image'), userControllers.updateChatGroup);
+user_route.post('/update-chat-group', auth.isLogin, upload.single('image'), userControllers.updateChatGroup);
 user_route.post('/delete-chat-group',auth.isLogin, userControllers.deleteChatGroup);
 user_route.get('/share-group/:id', userControllers.shareGroup);
-user_route.post('/join-group', userControllers.joinGroup);
+user_route.post('/join-group', auth.isLogin, userControllers.joinGroup);
 user_route.get('/group-chat',auth.isLogin, userControllers.groupChat);
-user_route.post('/group-save-chat', userControllers.saveGroupChat);
-user_route.post('/load-group-chats', userControllers.loadGroupChat);
-user_route.post('/delete-group-chat', userControllers.deleteGroupChat);
-user_route.post('/update-group-chat', userControllers.updateGroupChat);
+user_route.post('/group-save-chat', auth.isLogin, userControllers.saveGroupChat);
+user_route.post('/load-group-chats', auth.isLogin, userControllers.loadGroupChat);
+user_route.post('/delete-group-chat', auth.isLogin, userControllers.deleteGroupChat);
+user_route.post('/update-group-chat', auth.isLogin, userControllers.updateGroupChat);
 user_route.post('/refresh-token', userControllers.refreshToken);
 // add this route
 const User = require('../models/userModel.js');

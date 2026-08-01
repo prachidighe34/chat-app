@@ -2,9 +2,13 @@ const jwt = require('jsonwebtoken');
 
 const isLogin = async(req, res, next) => {
     try {
+        console.log('JWT_SECRET exists:', !!process.env.JWT_SECRET);
+        console.log('JWT_SECRET length:', process.env.JWT_SECRET?.length);
+        
         if(req.session.user) return next();
 
         const token = req.headers.authorization?.split(' ')[1];
+        console.log('Token received:', token ? token.substring(0, 20) + '...' : 'none');
         
         if(token) {
             try {
@@ -13,11 +17,11 @@ const isLogin = async(req, res, next) => {
                 req.user = decoded;
                 return next();
             } catch(jwtError) {
-                console.log('JWT verify failed:', jwtError.message); // add this
+                console.log('JWT verify failed:', jwtError.message);
                 if(req.headers['x-requested-with'] === 'flutter') {
                     return res.status(401).json({
-                        success: false, 
-                        message: 'Token expired or invalid: ' + jwtError.message
+                        success: false,
+                        message: 'JWT Error: ' + jwtError.message
                     });
                 }
                 return res.redirect('/');

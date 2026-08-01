@@ -40,17 +40,18 @@ user_route.post('/update-chat', userControllers.updateChat);
 user_route.get('/groups', auth.isLogin, async(req, res) => {
     try {
         const userId = req.session.user?._id || req.user?.id;
-        
+        console.log('Getting groups for userId:', userId); // debug
+
         if(req.headers['x-requested-with'] === 'flutter') {
-            const groups = await Group.find({creator_id: userId});
+            const groups = await Group.find({ creator_id: userId });
+            console.log('Groups found:', groups.length); // debug
             return res.json({success: true, groups});
         }
-        
-        // browser request - render EJS as before
-        const groups = await Group.find({creator_id: userId});
+
+        const groups = await Group.find({creator_id: req.session.user._id});
         res.render('group', {user: req.session.user, groups, message: undefined});
     } catch(error) {
-        console.log(error.message);
+        console.log('getGroups error:', error.message);
         if(req.headers['x-requested-with'] === 'flutter') {
             return res.status(500).json({success: false, message: error.message});
         }

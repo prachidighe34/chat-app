@@ -4,32 +4,36 @@ const isLogin = async(req, res, next) => {
     try {
         if(req.session.user) return next();
 
-        const authHeader = req.headers.authorization;
-        console.log('Auth header:', authHeader); // debug
-        
-        const token = authHeader?.split(' ')[1];
-        console.log('Token:', token ? 'exists' : 'missing'); // debug
+        const token = req.headers.authorization?.split(' ')[1];
         
         if(token) {
-            const decoded = jwt.verify(token, process.env.JWT_SECRET);
-            console.log('Decoded:', decoded); // debug
-            req.user = decoded;
-            return next();
+            try {
+                const decoded = jwt.verify(token, process.env.JWT_SECRET);
+                console.log('Decoded JWT:', decoded);
+                req.user = decoded;
+                return next();
+            } catch(jwtError) {
+                console.log('JWT verify failed:', jwtError.message); // add this
+                if(req.headers['x-requested-with'] === 'flutter') {
+                    return res.status(401).json({
+                        success: false, 
+                        message: 'Token expired or invalid: ' + jwtError.message
+                    });
+                }
+                return res.redirect('/');
+            }
         }
 
         if(req.headers['x-requested-with'] === 'flutter') {
-            return res.status(401).json({success: false, message: 'Unauthorized'});
+            return res.status(401).json({success: false, message: 'No token provided'});
         }
         res.redirect('/');
+
     } catch(error) {
-        console.log('Auth error:', error.message);
-        if(req.headers['x-requested-with'] === 'flutter') {
-            return res.status(401).json({success: false, message: 'Token expired'});
-        }
+        console.log('Auth middleware error:', error.message);
         res.redirect('/');
     }
 }
-
 const isLogout = async(req, res, next) => {
     try {
         if(req.session.user) {

@@ -221,31 +221,48 @@ const loadGroups = async(req, res) => {
 }
 
 const createGroup = async(req, res) => {
-    try{
+    try {
+        let imageUrl = '';
+        if(req.file) {
+            const result = await uploadToCloudinary(req.file.buffer);
+            imageUrl = result.secure_url;
+        }
 
-      const group = new Group({
-            creator_id: req.session.user._id,
+        const group = new Group({
+            creator_id: req.session.user?._id || req.user?.id,
             name: req.body.group_name,
-            image: 'image/' + req.file.filename,
+            image: imageUrl,
             limit: req.body.limit
         });
-        
+
         await group.save();
 
-        const groups = await Group.find({creator_id: req.session.user._id});
+        // Flutter — respond immediately after save, don't fetch all groups
+        if(req.headers['x-requested-with'] === 'flutter') {
+            return res.json({
+                success: true,
+                message: 'Group created successfully',
+                group: group  // just return the created group
+            });
+        }
 
-        res.render('group',
-            {
-            message: req.body.group_name + " group created successfully",
+        // Browser — fetch groups and render
+        const groups = await Group.find({creator_id: req.session.user._id});
+        res.render('group', {
+            user: req.session.user,
             groups: groups,
-            user: req.session.user
+            message: req.body.group_name + ' group created successfully'
+ 
         });
-    }
-    catch (error) {
-        console.log(error.message);
+
+    } catch(error) {
+        console.log('createGroup error:', error.message);
+        if(req.headers['x-requested-with'] === 'flutter') {
+            return res.status(500).json({success: false, message: error.message});
+        }
+        res.render('group', {user: req.session.user, groups: [], message: 'Failed'});
     }
 }
-
 const getMembers = async(req, res) => {
     try {
         let users = await User.aggregate([

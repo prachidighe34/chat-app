@@ -4,10 +4,15 @@ const isLogin = async(req, res, next) => {
     try {
         if(req.session.user) return next();
 
-        const token = req.headers.authorization?.split(' ')[1];
+        const authHeader = req.headers.authorization;
+        console.log('Auth header:', authHeader); // debug
+        
+        const token = authHeader?.split(' ')[1];
+        console.log('Token:', token ? 'exists' : 'missing'); // debug
+        
         if(token) {
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
-            console.log('Decoded JWT:', decoded); // add this
+            console.log('Decoded:', decoded); // debug
             req.user = decoded;
             return next();
         }

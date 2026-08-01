@@ -220,14 +220,14 @@ const loadGroups = async(req, res) => {
     }
 }
 
-const createGroup = async(req, res) => {
-    try {
-        // get userId from both session and JWT
-        let userId = req.session.user?._id || req.user?.id;
-        
-        console.log('Session user:', req.session.user);
-        console.log('JWT user:', req.user);
-        console.log('userId:', userId);
+
+ // get userId from both session and JWT
+       const createGroup = async(req, res) => {
+         try {
+        console.log('createGroup called');
+        console.log('Headers:', req.headers.authorization);
+        console.log('req.user in createGroup:', req.user);
+        console.log('req.session.user in createGroup:', req.session.user);
 
         if(!userId) {
             return res.status(401).json({success: false, message: 'User not found'});

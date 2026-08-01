@@ -1,4 +1,4 @@
-cat > /home/prachi/taskChatApp/backend/middleware/auth.js << 'EOF'
+
 const jwt = require('jsonwebtoken');
 
 const isLogin = async(req, res, next) => {

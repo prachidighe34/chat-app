@@ -220,17 +220,18 @@ const loadGroups = async(req, res) => {
     }
 }
 
-
- // get userId from both session and JWT
-       const createGroup = async(req, res) => {
-         try {
+const createGroup = async(req, res) => {
+    try {
         console.log('createGroup called');
-        console.log('Headers:', req.headers.authorization);
-        console.log('req.user in createGroup:', req.user);
-        console.log('req.session.user in createGroup:', req.session.user);
+        console.log('req.user:', req.user);
+        console.log('req.session.user:', req.session.user);
+
+        // fix — declare userId with const
+        const userId = req.session.user?._id || req.user?.id;
+        console.log('userId:', userId);
 
         if(!userId) {
-            return res.status(401).json({success: false, message: 'User not found'});
+            return res.status(401).json({success: false, message: 'User not authenticated'});
         }
 
         let imageUrl = '';
@@ -240,14 +241,14 @@ const loadGroups = async(req, res) => {
         }
 
         const group = new Group({
-            creator_id: userId,  // make sure this is set
+            creator_id: userId,
             name: req.body.group_name,
             image: imageUrl,
             limit: req.body.limit
         });
 
         await group.save();
-        console.log('Saved group:', group); // verify creator_id is saved
+        console.log('Group saved:', group);
 
         if(req.headers['x-requested-with'] === 'flutter') {
             return res.json({

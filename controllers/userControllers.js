@@ -222,6 +222,17 @@ const loadGroups = async(req, res) => {
 
 const createGroup = async(req, res) => {
     try {
+        // get userId from both session and JWT
+        let userId = req.session.user?._id || req.user?.id;
+        
+        console.log('Session user:', req.session.user);
+        console.log('JWT user:', req.user);
+        console.log('userId:', userId);
+
+        if(!userId) {
+            return res.status(401).json({success: false, message: 'User not found'});
+        }
+
         let imageUrl = '';
         if(req.file) {
             const result = await uploadToCloudinary(req.file.buffer);
@@ -229,30 +240,28 @@ const createGroup = async(req, res) => {
         }
 
         const group = new Group({
-            creator_id: req.session.user?._id || req.user?.id,
+            creator_id: userId,  // make sure this is set
             name: req.body.group_name,
             image: imageUrl,
             limit: req.body.limit
         });
 
         await group.save();
+        console.log('Saved group:', group); // verify creator_id is saved
 
-        // Flutter — respond immediately after save, don't fetch all groups
         if(req.headers['x-requested-with'] === 'flutter') {
             return res.json({
                 success: true,
                 message: 'Group created successfully',
-                group: group  // just return the created group
+                group: group
             });
         }
 
-        // Browser — fetch groups and render
-        const groups = await Group.find({creator_id: req.session.user._id});
+        const groups = await Group.find({creator_id: userId});
         res.render('group', {
             user: req.session.user,
             groups: groups,
             message: req.body.group_name + ' group created successfully'
- 
         });
 
     } catch(error) {
@@ -260,7 +269,6 @@ const createGroup = async(req, res) => {
         if(req.headers['x-requested-with'] === 'flutter') {
             return res.status(500).json({success: false, message: error.message});
         }
-        res.render('group', {user: req.session.user, groups: [], message: 'Failed'});
     }
 }
 const getMembers = async(req, res) => {

@@ -74,16 +74,39 @@ user_route.post('/refresh-token', userControllers.refreshToken);
 // add this route
 const User = require('../models/userModel.js');
 
-user_route.get('/api/users', auth.isLogin, async(req, res) => {
+user_route.get('/groups', auth.isLogin, async(req, res) => {
     try {
         const userId = req.session.user?._id || req.user?.id;
-        const users = await User.find({
-            _id: { $nin: [userId] }
-        }).select('name email image is_online');
-        
-        res.json({ success: true, users });
+
+        if(req.headers['x-requested-with'] === 'flutter') {
+            // get groups created by user
+            const myGroups = await Group.find({creator_id: userId});
+            
+            // get groups user has joined as member
+            const memberships = await Member.find({user_id: userId}).populate('group_id');
+            const joinedGroups = memberships
+                .filter(m => m.group_id)
+                .map(m => m.group_id);
+
+            // combine and remove duplicates
+            const allGroupIds = new Set(myGroups.map(g => g._id.toString()));
+            const combined = [...myGroups];
+            joinedGroups.forEach(g => {
+                if(!allGroupIds.has(g._id.toString())) {
+                    combined.push(g);
+                }
+            });
+
+            return res.json({success: true, groups: combined});
+        }
+
+        const groups = await Group.find({creator_id: req.session.user._id});
+        res.render('group', {user: req.session.user, groups, message: undefined});
     } catch(error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.log('getGroups error:', error.message);
+        if(req.headers['x-requested-with'] === 'flutter') {
+            return res.status(500).json({success: false, message: error.message});
+        }
     }
 });
 user_route.use(function(req, res){

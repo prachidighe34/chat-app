@@ -306,7 +306,7 @@ const getMembers = async(req, res) => {
     } catch (error) {
         res.status(400).send({success : false, msg: error.message});
     }
-}}
+}
 
 const addMembers = async (req, res) => {
     try {

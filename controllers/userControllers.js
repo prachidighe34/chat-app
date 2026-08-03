@@ -275,7 +275,6 @@ const createGroup = async(req, res) => {
 const getMembers = async(req, res) => {
     try {
         let users = await User.aggregate([
-
             {
                 $lookup:{
                     from:"members",
@@ -286,7 +285,7 @@ const getMembers = async(req, res) => {
                             $match:{
                                 $expr:{
                                     $and:[
-                                        {$eq:["$group_id", req.body.group_id]}
+                                        {$eq:["$group_id", new mongoose.Types.ObjectId(req.body.group_id)]}
                                     ]
                                 }
                             }
@@ -298,7 +297,7 @@ const getMembers = async(req, res) => {
             {
                 $match:{
                     "_id":{
-                        $nin:[req.session.user._id]
+                        $nin:[new mongoose.Types.ObjectId(req.session.user?._id || req.user?.id)]
                     }
                 }
             }
@@ -307,7 +306,7 @@ const getMembers = async(req, res) => {
     } catch (error) {
         res.status(400).send({success : false, msg: error.message});
     }
-}
+}}
 
 const addMembers = async (req, res) => {
     try {

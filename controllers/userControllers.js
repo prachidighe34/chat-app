@@ -129,17 +129,19 @@ const login = async(req, res) => {
 const refreshToken = async(req, res) => {
     try {
         const token = req.cookies.refreshToken || req.body.refreshToken;
-        if(!token) return res.status(401).send({success: false, msg: 'No refresh token'});
+        if(!token) {
+            return res.json({success: false, message: 'No refresh token'});
+        }
 
         const decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
         const accessToken = jwt.sign(
-            { id: decoded.id },
+            {id: decoded.id},
             process.env.JWT_SECRET,
-            { expiresIn: '7d' }
+            {expiresIn: '7d'}
         );
-        res.send({success: true, accessToken});
+        res.json({success: true, accessToken});
     } catch(error) {
-        res.status(401).send({success: false, msg: 'Invalid refresh token'});
+        res.status(401).json({success: false, message: 'Invalid refresh token'});
     }
 }
 const logout = async(req, res) => {

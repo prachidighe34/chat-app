@@ -37,26 +37,7 @@ user_route.post('/save-chat', userControllers.saveChat);
 user_route.post('/delete-chat', userControllers.deleteChat);
 user_route.post('/update-chat', userControllers.updateChat);
 
-user_route.get('/groups', auth.isLogin, async(req, res) => {
-    try {
-        const userId = req.session.user?._id || req.user?.id;
-        console.log('Getting groups for userId:', userId); // debug
 
-        if(req.headers['x-requested-with'] === 'flutter') {
-            const groups = await Group.find({ creator_id: userId });
-            console.log('Groups found:', groups.length); // debug
-            return res.json({success: true, groups});
-        }
-
-        const groups = await Group.find({creator_id: req.session.user._id});
-        res.render('group', {user: req.session.user, groups, message: undefined});
-    } catch(error) {
-        console.log('getGroups error:', error.message);
-        if(req.headers['x-requested-with'] === 'flutter') {
-            return res.status(500).json({success: false, message: error.message});
-        }
-    }
-});
 user_route.post('/groups', auth.isLogin, upload.single('image'), userControllers.createGroup);
 
 user_route.post('/get-members', auth.isLogin, userControllers.getMembers);
@@ -71,32 +52,25 @@ user_route.post('/load-group-chats', userControllers.loadGroupChat);
 user_route.post('/delete-group-chat', userControllers.deleteGroupChat);
 user_route.post('/update-group-chat', userControllers.updateGroupChat);
 user_route.post('/refresh-token', userControllers.refreshToken);
-// add this route
+
 const User = require('../models/userModel.js');
 
+// GET groups - combined created + joined
 user_route.get('/groups', auth.isLogin, async(req, res) => {
     try {
         const userId = req.session.user?._id || req.user?.id;
 
         if(req.headers['x-requested-with'] === 'flutter') {
-            // get groups created by user
             const myGroups = await Group.find({creator_id: userId});
-            
-            // get groups user has joined as member
             const memberships = await Member.find({user_id: userId}).populate('group_id');
             const joinedGroups = memberships
                 .filter(m => m.group_id)
                 .map(m => m.group_id);
-
-            // combine and remove duplicates
             const allGroupIds = new Set(myGroups.map(g => g._id.toString()));
             const combined = [...myGroups];
             joinedGroups.forEach(g => {
-                if(!allGroupIds.has(g._id.toString())) {
-                    combined.push(g);
-                }
+                if(!allGroupIds.has(g._id.toString())) combined.push(g);
             });
-
             return res.json({success: true, groups: combined});
         }
 
@@ -109,6 +83,21 @@ user_route.get('/groups', auth.isLogin, async(req, res) => {
         }
     }
 });
+
+// GET users for dashboard - MUST be before wildcard
+user_route.get('/api/users', auth.isLogin, async(req, res) => {
+    try {
+        const userId = req.session.user?._id || req.user?.id;
+        const users = await User.find({
+            _id: { $nin: [userId] }
+        }).select('name email image is_online');
+        res.json({ success: true, users });
+    } catch(error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// wildcard MUST be last
 user_route.use(function(req, res){
     res.redirect('/');
 });

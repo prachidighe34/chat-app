@@ -83,17 +83,16 @@ const login = async(req, res) => {
         }
 
         const accessToken = jwt.sign(
-            {id: userData._id, name: userData.name},
-            process.env.JWT_SECRET,
-            {expiresIn: '7d'}
-        );
+    {id: userData._id, name: userData.name},
+    process.env.JWT_SECRET,
+    {expiresIn: '7d'}  // was 15m
+);
 
-        const refreshToken = jwt.sign(
-            {id: userData._id},
-            process.env.JWT_REFRESH_SECRET,
-            {expiresIn: '7d'}
-        );
-
+const refreshToken = jwt.sign(
+    {id: userData._id},
+    process.env.JWT_REFRESH_SECRET,
+    {expiresIn: '30d'}  // was 7d
+);
         // Flutter request — return JSON
         if(req.headers['x-requested-with'] === 'flutter') {
             return res.json({

@@ -7,6 +7,7 @@ const GroupChat = require('../models/groupChatModel');
 const mongoose = require ("mongoose");
 const jwt = require('jsonwebtoken');
 const { uploadToCloudinary } = require('../helpers/cloudinary');
+const emailQueue = require('../queues/emailQueue');
 const registerLoad = async (req, res) => {
  try{
         res.render('register');
@@ -165,18 +166,46 @@ const loadDashboard = async(req, res) => {
     }
 }
 
+
+
 const saveChat = async(req, res) => {
     try {
-        let chat= new Chat({
-            sender_id : req.body.sender_id,
-            receiver_id : req.body.receiver_id,
-            message : req.body.message
-            
-    });
+        let chat = new Chat({
+            sender_id: req.body.sender_id,
+            receiver_id: req.body.receiver_id,
+            message: req.body.message
+        });
+
         let newChat = await chat.save();
-        res.status(200).send({ success: true, msg: "Message sent successfully", data: newChat });
-    } catch (error) {
-        res.status(400).send({ success: false, msg: error.message });
+
+        // queue email if receiver is offline
+        const receiver = await User.findById(req.body.receiver_id);
+        const sender = await User.findById(req.body.sender_id);
+
+        if(receiver && receiver.is_online === '0' && receiver.email) {
+            await emailQueue.add(
+                'send-dm-notification',
+                {
+                    to: receiver.email,
+                    senderName: sender?.name || 'Someone',
+                    message: req.body.message,
+                    type: 'dm'
+                },
+                {
+                    attempts: 3,
+                    backoff: { type: 'exponential', delay: 2000 }
+                }
+            );
+            console.log(`Queued email for offline user: ${receiver.email}`);
+        }
+
+        res.status(200).send({
+            success: true,
+            msg: 'Message sent successfully',
+            data: newChat
+        });
+    } catch(error) {
+        res.status(400).send({success: false, msg: error.message});
     }
 }
 
@@ -449,19 +478,45 @@ const groupChat = async(req, res) => {
     }
 }
 
-const saveGroupChat = async (req,res) => {
+const saveGroupChat = async(req, res) => {
     try {
-
         let chat = new GroupChat({
-            sender_id:req.body.sender_id,
+            sender_id: req.body.sender_id,
             group_id: req.body.group_id,
             message: req.body.message
         });
 
         let newChat = await chat.save();
-        res.send({success:true, chat:newChat});
-    } catch (error) {
-        res.send({success:false, msg:error.message});   
+
+        // get all offline members and queue emails
+        const members = await Member.find({group_id: req.body.group_id});
+        const sender = await User.findById(req.body.sender_id);
+
+        for(const member of members) {
+            // skip the sender
+            if(member.user_id.toString() === req.body.sender_id) continue;
+
+            const memberUser = await User.findById(member.user_id);
+            if(memberUser && memberUser.is_online === '0' && memberUser.email) {
+                await emailQueue.add(
+                    'send-group-notification',
+                    {
+                        to: memberUser.email,
+                        senderName: sender?.name || 'Someone',
+                        message: req.body.message,
+                        type: 'group'
+                    },
+                    {
+                        attempts: 3,
+                        backoff: { type: 'exponential', delay: 2000 }
+                    }
+                );
+            }
+        }
+
+        res.send({success: true, chat: newChat});
+    } catch(error) {
+        res.send({success: false, msg: error.message});
     }
 }
 

@@ -33,6 +33,9 @@ app.use('/', userRoute);
 const io = require('socket.io')(http);
 const usp = io.of('/user-namespace');
 
+// start email worker
+require('./workers/emailWorker');
+console.log('Email worker started');
 // socket auth middleware
 usp.use((socket, next) => {
     const token = socket.handshake.auth.token;

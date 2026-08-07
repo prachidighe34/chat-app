@@ -6,12 +6,17 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - MONGO_URI=mongodb://mongo:27017/dynamicChat
-      - SESSION_SECRET='thisismysessionsecret'
-      - JWT_SECRET='thisisJWTsecret'
-      - JWT_REFRESH_SECRET='JWTrefreshSecret'
+      - MONGO_URI="mongodb+srv://prachidighe:prachidighechatapp03@cluster0.oxajfit.mongodb.net/dynamicChat?retryWrites=true&w=majority"
+      - SESSION_SECRET=thisismysessionsecret
+      - JWT_SECRET=thisisJWTsecret
+      - JWT_REFRESH_SECRET=JWTrefreshSecret
+      - EMAIL_USER = itachiuchi0906@gmail.com
+      - EMAIL_PASS = bxwx pwdm pdle hrhr
+      - REDIS_URL=redis://red-d9qm2ms9v7es73f82630:6379
+
     depends_on:
       - mongo
+      - redis
     volumes:
       - ./public/images:/app/public/images
 
@@ -21,6 +26,11 @@ services:
       - "27017:27017"
     volumes:
       - mongo_data:/data/db
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
 
 volumes:
   mongo_data:
